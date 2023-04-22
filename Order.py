@@ -5,7 +5,7 @@ from flask import Flask
 app = Flask(__name__)
 
 
-@app.route('/good/order/ini/', methods=['POST'])
+@app.route('/good/orders', methods=['POST'])
 def ini():
     try:
         id = request.form.get('id')  # 买方的id
@@ -65,6 +65,24 @@ def agree():
             session.query(Order).filter(Order.id == order_id).update({'seller_status': -1, 'status': 0})
             session.commit()
             return jsonify(dict(code=201, message='订单拒绝成功'))
+    except Exception as e:
+        print(e)
+
+
+# 收藏订单
+@app.route('/user/order/fav/{id}', methods=['POST'])
+def fav():
+    try:
+        id = request.form.get('id')     # 订单号
+        fav = 2
+        f = session.query(Order).filter(Order.id == id).first()
+        if not f:
+            return jsonify(dict(code=404, message="该订单不存在"))
+        else:
+            session.query(Order).filter(Order.id == id).update({"status": fav})
+            session.commit()
+            data = {''}
+            return jsonify(dict(code=201, message="收藏订单成功"))
     except Exception as e:
         print(e)
 
