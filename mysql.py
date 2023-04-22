@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/mewfish", echo=True)
+engine = create_engine("mysql+pymysql://mew_store:114514@106.14.35.23:3306/test", echo=True)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 session = Session()
