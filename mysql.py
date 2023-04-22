@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
-engine = create_engine("mysql+pymysql://mew_store:114514@106.14.35.23:3306/test", echo=True)
+engine = create_engine("mysql+pymysql://root:123456@127.0.0.1:3306/Mewfish", echo=True)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -18,9 +18,6 @@ class User(Base):
     phone_number = Column(String(50))
     money = Column(Integer)
     status = Column(Integer)    # 0为正常用户，1为黑户，2为被冻结状态，3为管理员
-    good = relationship('good', backref='user')
-    report = relationship('report', backref='user')
-    order = relationship('order', backref='user')
 
     def __repr__(self):
         ID = self.id
@@ -46,8 +43,7 @@ class Good(Base):
     account = Column(String(50))    # 账号
     password = Column(String(50))   # 账号密码
     status = Column(Integer)    # 商品状态未审核为0，审核通过为1，审核不通过为-1,被下架为2，已售出为3
-    sell_id = Column(Integer(), ForeignKey('user.id'))   # 卖家id
-    order = relationship('order', backref='good')
+    sell_id = Column(Integer)   # 卖家id
 
     def __repr__(self):
         ID = self.id
@@ -67,13 +63,12 @@ class Order(Base):
     __tablename__ = "order"
     id = Column(Integer, primary_key=True)
     status = Column(Integer)    # 订单存在为1，不存在为0，被收藏为2
-    buyer_id = Column(Integer(), ForeignKey('user.id'))  # 买方id
-    seller_id = Column(Integer(), ForeignKey('user.id'))     # 卖方id
-    good_id = Column(Integer(), ForeignKey('good.id'))   # 商品id
+    buyer_id = Column(Integer)  # 买方id
+    seller_id = Column(Integer)     # 卖方id
+    good_id = Column(Integer)   # 商品id
     buyer_status = Column(Integer)  # 买方付款为1，未付款为0
     seller_status = Column(Integer)  # 卖方确认订单为1，未确认为0,拒绝为-1
     money = Column(Integer)     # 价格
-    report = relationship('report', backref='order')
 
     def __repr__(self):
         ID = self.id
@@ -94,7 +89,7 @@ class Report(Base):
     report_id = Column(Integer(), ForeignKey('user.id'))     # 被举报者的id
     report_order = Column(Integer(), ForeignKey('order.id'))
     status = Column(Integer)     # 举报信息的处理情况，-1为未通过，0为未处理，1为通过举报
-    send_id = Column(Integer(), ForeignKey('user.id'))  # 举报者的id
+    send_id = Column(Integer)  # 举报者的id
     content = Column(String(50))  # 举报的原因和描述
 
     def __repr__(self):
