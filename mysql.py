@@ -1,8 +1,9 @@
 from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-engine = create_engine("mysql+pymysql://root:123456@127.0.0.1:3306/Mewfish", echo=True)
+
+engine = create_engine("mysql+pymysql://mew_store:114514@106.14.35.23:3306/test", echo=True)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -14,7 +15,7 @@ class User(Base):
     nickname = Column(String(50))
     name = Column(String(50))
     profile_photo = Column(String(50))
-    password = Column(String(50))
+    password = Column(String(102))
     phone_number = Column(String(50))
     money = Column(Integer)
     status = Column(Integer)    # 0为正常用户，1为黑户，2为被冻结状态，3为管理员
@@ -86,8 +87,8 @@ class Order(Base):
 class Report(Base):
     __tablename__ = "report"
     id = Column(Integer, primary_key=True)  # 举报信息的id
-    report_id = Column(Integer(), ForeignKey('user.id'))     # 被举报者的id
-    report_order = Column(Integer(), ForeignKey('order.id'))
+    report_id = Column(Integer)     # 被举报者的id
+    report_order = Column(Integer)
     status = Column(Integer)     # 举报信息的处理情况，-1为未通过，0为未处理，1为通过举报
     send_id = Column(Integer)  # 举报者的id
     content = Column(String(50))  # 举报的原因和描述
