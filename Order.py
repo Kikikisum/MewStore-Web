@@ -102,7 +102,7 @@ class pay_order(Resource):
                     user = db.session.query(User).filter(User.id == uid).first()
                     money = user.money-order_money
                     if money >= 0:
-                        db.session.query(User).filter(Order.id == uid).update({'money': money})
+                        db.session.query(User).filter(User.id == uid).update({'money': money})
                         db.session.commit()
                         if order.buyer_status == 1:
                             db.session.query(Order).filter(Order.id == id).update({'status': 1})
@@ -151,6 +151,8 @@ class search_Myorder(Resource):
                 sql_order = db.session.query(Order).filter(Order.buyer_id == uid).order_by(Order.id.desc())
                 orders = sql_order.paginate(page=page, per_page=size).items
                 order_list = []
+                if not orders:
+                    return make_response(jsonify(code=200, message="获取订单成功", data=order_list), 200)
                 for order in orders:
                     order_dict = {"id": order.id, "status": order.status, "buyer_id": order.buyer_id,
                                   "seller_id": order.seller_id, "good_id": order.good_id,
@@ -179,6 +181,8 @@ class get_Status(Resource):
                     sql_order = db.session.query(Order).filter(Order.status == status).order_by(Order.id.desc())
                     orders = sql_order.paginate(page=page, per_page=size).items
                     order_list = []
+                    if not orders:
+                        return make_response(jsonify(code=200, message="获取订单成功", data=order_list), 200)
                     for order in orders:
                         order_dict = {"id": order.id, "status": order.status, "buyer_id": order.buyer_id,
                                           "seller_id": order.seller_id, "good_id": order.good_id,
