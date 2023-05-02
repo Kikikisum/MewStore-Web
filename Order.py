@@ -1,24 +1,28 @@
-from flask import request, jsonify
-from mysql import User, Good, Report, session, Order
-from token import get_status, get_expiration, get_id
-from flask import Flask
+import logging
+from flask import request, jsonify, Blueprint, make_response
+from mysql import User, Good, db, Order, app
+from Token import get_expiration, get_id
+from flask_restful import reqparse, Api, Resource
+from snowflake import id_generate
 
-app = Flask(__name__)
+order = Blueprint('order', __name__)
+api = Api(order)
+logger = logging.getLogger(__name__)
 
 
-@app.route('/good/order/', methods=['POST'])
-def ini():
-    try:
+#  用户对商品出价
+class Order_ini(Resource):
+    #   id为商品id
+    def post(self, id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('price', type=float, required=True, location=['form'])
         token = request.headers.get("Authorization")
+        args = parser.parse_args()
         if get_expiration(token):
-            id = get_id(token)  # 买方的id
-            good_id = request.form.get('good_id')  # 商品的id
-            money = request.form.get('money')
-            money = int(money)
-            user = session.query(User).filter(User.id == id).first()
+            uid = get_id(token)  # 买方的id
+            user = db.session.query(User).filter_by(User.id == uid).first()
             status = user.status
-            user_money = user.money
-            good = session.query(Good).filter(Good.id == good_id).first()
+            good = db.session.query(Good).filter_by(Good.id == id).first()
             good_status = good.status
             if good_status == 2:
                 return jsonify(dict(code=403, message='出价失败', data="商品已被下架"))
@@ -32,111 +36,151 @@ def ini():
                         if status == 2:
                             return jsonify(code=403, message='出价失败', data='用户处于被冻结状态，无法出价')
                         else:
-                            if user_money >= money:
-                                sid = good.sell_id
-                                order = Order(status=1, buyer_id=id, seller_id=sid, buyer_status=1,
-                                              seller_status=1, good_id=good.id, money=money)
-                                session.add(order)
-                                session.flush()
-                                session.commit()
-                                data = {'id': order.id, 'status': order.status, 'good_id ': good.id, 'buyer_id':
-                                    order.buyer_id, 'sell_id': order.seller_id, 'buyer_status': 0,
-                                        'seller_status': 0, 'money': money
-                                        }
-                                return jsonify(dict(code=201, message='出价成功', data=data))
-                            else:
-                                return jsonify(code=403, message='出价失败', data='钱包余额不足')
+                            order = Order(id=id_generate(1, 4), status=0, buyer_id=uid, seller_id=good.seller_id,
+                                          buyer_status=0, seller_status=0, good_id=good.id, price=args['price'])
+                            db.session.add(order)
+                            db.session.commit()
+                            logger.debug("创建订单成功")
+                            return make_response(jsonify(code=201, message='出价成功'), 201)
         else:
-            return jsonify(dict(code=401, message="登录时间过期"))
-
-    except Exception as e:
-        print(e)
+            return make_response(jsonify(code=401, message="登录过期"), 401)
 
 
-# 卖家接受订单
-@app.route('/good/order/agree/', methods=['POST'])
-def agree():
-    try:
+# 卖家接受订单,id是订单id
+class agree_order(Resource):
+    def put(self, id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('status', type=int, required=True, location=['form'])
+        args = parser.parse_args()
         token = request.headers.get("Authorization")
         if get_expiration(token):
-            user_status = get_status(token)
+            uid = get_id(token)
+            user = db.session.query(User).filter_by(User.id == uid).first()
+            user_status = user.status
             if user_status == 2 or user_status == 1:
-                return jsonify(dict(code=403, message="订单确认失败", data="用户处于冻结或黑户状态"))
-            order_id = request.form.get('order_id')
-            status = request.form.get('status')
-            good_id = session.query(Order).filter(Order.id == order_id).first().good_id
-            if status == '1':
-                session.query(Order).filter(Order.good_id == good_id).update({'seller_status': -1})
-                session.query(Order).filter(Order.id == order_id).update({'seller_status': 1})
-                session.query(Good).filter(Good.id == good_id).update({'status': 3})
-                session.commit()
-                return jsonify(dict(code=201, message='订单确认成功', data="成功接收订单"))
+                return make_response(jsonify(code=403, message="订单确认失败", data="用户处于冻结或黑户状态"), 403)
+            good_id = db.session.query(Order).filter_by(Order.id == id).first().good_id
+            if args['status'] == '1':
+                db.session.query(Order).filter_by(Order.good_id == good_id).update({'seller_status': -1})
+                db.session.query(Order).filter_by(Order.id == id).update({'seller_status': 1, 'status': 1})
+                db.session.query(Good).filter_by(Good.id == good_id).update({'status': 3})
+                db.session.commit()
+                return make_response(jsonify(code=201, message='订单确认成功', data="成功接收订单"), 201)
             else:
-                session.query(Order).filter(Order.id == order_id).update({'seller_status': -1, 'status': 0})
-                session.commit()
+                db.session.query(Order).filter_by(Order.id == id).update({'seller_status': -1})
+                db.session.commit()
                 return jsonify(dict(code=201, message='订单确认成功', data="成功拒绝订单"))
         else:
             return jsonify(dict(code=401, message="登录时间过期"))
 
-    except Exception as e:
-        print(e)
 
-
-# 收藏订单
-@app.route('/user/order/fav/<int:id>', methods=['POST'])
-def fav():
-    try:
+#   id是订单id
+class pay_order(Resource):
+    def put(self, id):
         token = request.headers.get("Authorization")
         if get_expiration(token):
-            oid = id  # 订单号
-            fav = 2
-            order = session.query(Order).filter(Order.id == oid).first()
-            if not order:
-                return jsonify(dict(code=404, message="收藏失败", data="该订单不存在"))
-            else:
-                session.query(Order).filter(Order.id == oid).update({"status": fav})
-                session.commit()
-                order = session.query(Order).filter(Order.id == oid).first()
-                data = {'id': order.id, 'status': order.status, 'buyer_id': order.buyer_id,
-                        'seller_id': order.seller_id, 'good_id': order.good_id, 'buyer_status'
-                        : order.buyer_status, 'seller_status': order.seller_id, 'money':
-                            order.money
-                        }
-                return jsonify(dict(code=201, message="收藏成功", data="收藏订单成功"))
-        else:
-            return jsonify(dict(code=401, message="登录时间过期"))
-
-    except Exception as e:
-        print(e)
-
-
-@app.route('/user/order/pay/<int:id>',methos=['POST'])
-def pay():
-    try:
-        token = request.headers.get("Authorization")
-        if get_expiration(token):
-            order_id = id
             uid = get_id(token)
-            order=session.query(Order).filter(Order.id == order_id).first()
-            status = get_status(token)
-            if status==2 or status==1:
-                return jsonify(dict(code=403, message="订单确认失败", data="用户处于冻结或黑户状态"))
+            user = db.session.query(User).filter_by(User.id == uid).first()
+            status = user.status
+            order = db.session.query(Order).filter_by(Order.id == id).first()
+            if status == 2 or status == 1:
+                return make_response(jsonify(code=403, message="订单支付失败", data="用户处于冻结或黑户状态"),403)
             else:
-                order_money=order.money
-                user = session.query(User).filter(User.id == uid).first()
-                money=user.money-order_money
-                session.query(Order).filter(Order.id == order_id).update({'money':money})
-                session.commit()
-                return jsonify(dict(code=201, message='订单确认成功', data='买家确认成功'))
+                order_money = order.money
+                user = db.session.query(User).filter_by(User.id == uid).first()
+                money = user.money-order_money
+                if money >= 0:
+                    db.session.query(Order).filter_by(Order.id == id).update({'money': money})
+                    db.session.commit()
+                    return make_response(jsonify(code=201, message='订单支付成功', data='买家确认成功'), 201)
+                else:
+                    return make_response(jsonify(code=400, message='订单支付失败,', data='余额不足'), 400)
         else:
-            return jsonify(dict(code=401, message="登录时间过期"))
-    except Exception as e:
-        print(e)
+            return make_response(jsonify(code=401, message="登录时间过期"), 401)
+
 
 #  查找用户作为卖家的订单
-@app.route('/user/order/sell/<int:id>',methods=['GET'])
-def search_seller():
-    pass
+class search_sell(Resource):
+    def get(self):
+        token = request.headers.get("Authorization")
+        page = request.args.get('page', type=int, default=1)
+        size = request.args.get('size', type=int, default=4)
+        if get_expiration(token):
+            uid = get_id(token)
+            with app.app_context():
+                sql_order = db.session.query(Order).filter_by(Order.seller_id == uid).order_by(Order.id.desc())
+                orders = sql_order.paginate(page=page,per_page=size).items
+                order_list = []
+                for order in orders:
+                    order_dict = {"id": order.id, "status": order.status, "buyer_id": order.buyer_id,
+                                  "seller_id": order.seller_id, "good_id": order.good_id, "buyer_status": order.buyer_status,
+                                  "seller_status":order.seller_status, "price": order.price
+                                  }
+                    order_list.append(order_dict)
+                logger.debug('获取作为卖家的订单')
+                return make_response(jsonify(code=200,message="获取订单成功",data=order_list),200)
+        else:
+            return make_response(jsonify(code=401, message="登录时间过期"), 401)
 
-if __name__ == '__main__':
-    app.run()
+
+#   查看自身出价的订单
+class search_Myorder(Resource):
+    def get(self):
+        token = request.headers.get("Authorization")
+        page = request.args.get('page', type=int, default=1)
+        size = request.args.get('size', type=int, default=4)
+        if get_expiration(token):
+            uid = get_id(token)
+            with app.app_context():
+                sql_order = db.session.query(Order).filter_by(Order.buyer_id == uid).order_by(Order.id.desc())
+                orders = sql_order.paginate(page=page, per_page=size).items
+                order_list = []
+                for order in orders:
+                    order_dict = {"id": order.id, "status": order.status, "buyer_id": order.buyer_id,
+                                  "seller_id": order.seller_id, "good_id": order.good_id,
+                                  "buyer_status": order.buyer_status,
+                                  "seller_status": order.seller_status, "price": order.price
+                                  }
+                    order_list.append(order_dict)
+                logger.debug('获取作为卖家的订单')
+                return make_response(jsonify(code=200, message="获取订单成功", data=order_list), 200)
+        else:
+            return make_response(jsonify(code=401, message="登录时间过期"), 401)
+
+
+#   查询不同状态的订单(管理员)
+class get_Status(Resource):
+    def get(self, status):
+        token = request.headers.get("Authorization")
+        page = request.args.get('page', type=int, default=1)
+        size = request.args.get('size', type=int, default=4)
+        if get_expiration(token):
+            uid = get_id(token)
+            user = db.session.query(User).filter_by(User.id == uid).first()
+            user_status = user.status
+            if user_status == 3:
+                with app.app_context():
+                    sql_order = db.session.query(Order).filter_by(Order.status == status).order_by(Order.id.desc())
+                    orders = sql_order.paginate(page=page, per_page=size).items
+                    order_list = []
+                    for order in orders:
+                        order_dict = {"id": order.id, "status": order.status, "buyer_id": order.buyer_id,
+                                      "seller_id": order.seller_id, "good_id": order.good_id,
+                                      "buyer_status": order.buyer_status,
+                                      "seller_status": order.seller_status, "price": order.price
+                                      }
+                        order_list.append(order_dict)
+                    logger.debug('获取作为卖家的订单')
+                    return make_response(jsonify(code=200, message="获取订单成功", data=order_list), 200)
+            else:
+                return make_response(jsonify(code=401, message="没有权限查询"), 401)
+        else:
+            return make_response(jsonify(code=401, message="登录时间过期"), 401)
+
+
+api.add_resource(Order_ini, '/order/<int:id>')
+api.add_resource(agree_order, '/order/agree/<int:id>')
+api.add_resource(pay_order, '/order/pay/<int:id>')
+api.add_resource(search_sell, '/order/sell')
+api.add_resource(search_Myorder, '/my/order')
+api.add_resource(get_Status, '/order/<int:status>')
