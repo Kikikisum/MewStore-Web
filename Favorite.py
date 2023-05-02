@@ -1,9 +1,8 @@
 import logging
 from flask import request, jsonify, Blueprint, make_response
-from mysql import User, Good, db, Order, app,Favorite
+from mysql import User, db, app, Favorite
 from Token import get_expiration, get_id
-from flask_restful import reqparse, Api, Resource
-from snowflake import id_generate
+from flask_restful import Api, Resource
 
 fav = Blueprint('fav', __name__)
 api = Api(fav)

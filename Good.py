@@ -1,7 +1,7 @@
 from flask import request, jsonify
-from mysql import User, Good, Report, session, Order
+from mysql import User, Good, Report, Order,db
 from flask import Flask
-from token import get_expiration, get_id, get_status
+from Token import get_expiration, get_id, get_status
 
 app = Flask(__name__)
 
@@ -13,7 +13,7 @@ def view():
         token = request.headers.get("Authorization")
         if get_expiration(token):
             gid = id
-            good = session.query(Good).filter(Good.id == gid).first()
+            good = db.session.query(Good).filter(Good.id == gid).first()
             if not good:
                 return jsonify(dict(code=404, messsage="获取商品失败", date="商品不存在"))
             else:
@@ -35,7 +35,7 @@ def view_status():
         token = request.headers.get("Authorization")
         status = request.form.get("status")
         if get_expiration(token):
-            good = session.query(Good).filter(Good.status == good_status).all()
+            good = db.session.query(Good).filter(Good.status == good_status).all()
             if not good:
                 return jsonify(code=401, message="没有该状态的商品")
             else:
