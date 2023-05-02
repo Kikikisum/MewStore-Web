@@ -66,8 +66,8 @@ class Favorite(db.Model):
 
 class Freeze(db.Model):
     __tablename__ = "freeze"
-    user_id = db.Column(db.BigInteger)
-    order_id = db.Column(db.BigInteger)
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    order_id = db.Column(db.BigInteger, primary_key=True)
     reason = db.Column(db.Text)
     status = db.Column(db.Integer)
 
