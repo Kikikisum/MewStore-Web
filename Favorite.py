@@ -1,6 +1,6 @@
 import logging
 from flask import request, jsonify, Blueprint, make_response
-from mysql import User, db, app, Favorite
+from mysql import User, db, app, Favorite,Good
 from Token import get_expiration, get_id
 from flask_restful import Api, Resource
 
@@ -23,6 +23,11 @@ class add_fav(Resource):
                 else:
                     favs = db.session.query(Favorite).filter(Favorite.user_id == uid, Favorite.good_id == id).first()
                     if not favs:
+                        good = db.session.query(Good).filter(Good.id == id).first()
+                        good_view = good.view
+                        good_view += 1
+                        db.session.query(Good).filter(Good.id == id).update({'view': good_view})
+                        db.session.commit()
                         favorite = Favorite(user_id=uid, good_id=id)
                         db.session.add(favorite)
                         db.session.commit()
