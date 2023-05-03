@@ -4,6 +4,7 @@ from Order import orders
 from Favorite import fav
 from User import user
 from Verify import verify
+from Report import report
 import logging
 
 app = Flask(__name__)
@@ -13,6 +14,7 @@ app.register_blueprint(orders)
 app.register_blueprint(fav)
 app.register_blueprint(user)
 app.register_blueprint(verify)
+app.register_blueprint(report)
 
 logger = logging.getLogger()
 logger.setLevel(level=logging.DEBUG)  # 设置日志级别为DEBUG
