@@ -60,16 +60,20 @@ class Snowflake(object):
         return timestamp
 
 
-def id_generate(datacenter_id, machine_id):
+def id_generate(generate_type=None):
     # 初始化Snowflake对象
-    sf = Snowflake(datacenter_id, machine_id)
+    if generate_type == 'user':
+        sf = Snowflake(1436666666666, 1, 1)
+    if generate_type == 'good':
+        sf = Snowflake(966666666666, 1, 2)
+    if generate_type == 'order':
+        sf = Snowflake(466666666666, 1, 3)
+    if generate_type == 'report':
+        sf = Snowflake(9666666666, 1, 4)
+    if generate_type == 'message':
+        sf = Snowflake(1366666666666, 1, 5)
 
     # 生成一个唯一ID
     unique_id = sf.generate_id()
 
-    # # 将唯一ID转化为字符串
-    # unique_id_str = str(unique_id)
-    #
-    # # 打印唯一ID
-    # print("Unique ID: ", unique_id_str)
     return unique_id

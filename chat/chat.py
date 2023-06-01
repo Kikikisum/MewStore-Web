@@ -21,20 +21,17 @@ class Message(Namespace):  # 聊天功能
         else:
             emit('response', {'code': 401, 'message': '连接失败'})
 
-    def on_message(self, messages):
+    def on_message(self, receive_id, messages):
         token = request.headers.get('Authorization')
         if get_expiration(token):
-            uid = get_id(token)
             messages_dict = json.loads(messages)
-            receive_id = messages_dict.get('receive_id')  # 获取消息的接收者的唯一标识符
-            message_type = messages_dict.get('type')  # 获取消息类型
             message = messages_dict.get('message')  # 获取消息内容
             messages = Messages(id=id_generate('message'), isSystem=1, send_id=6, receive_id=receive_id,
-                                message=message, send_time=datetime.datetime.utcnow(), type=message_type, is_read=0)
+                                message=message, send_time=datetime.datetime.utcnow(), type=0, is_read=0)
             db.session.add(messages)
             db.session.flush()
             db.session.commit()
-            emit('response', {'code': 200, 'message': message, 'message_id': str(messages.id), 'type': message_type},
+            emit('response', {'code': 200, 'message': message, 'message_id': str(messages.id)},
                  room=receive_id)  # 发送系统消息给接收者
         else:
             emit('response', {'code': 400, 'message': '发送失败'})
