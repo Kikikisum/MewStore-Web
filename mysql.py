@@ -57,6 +57,7 @@ class Report(db.Model):
     reporter_id = db.Column(db.BigInteger)  # 举报者的id
     status = db.Column(db.Integer)  # 举报信息的处理情况，-1为未通过，0为未处理，1为通过举报
     content = db.Column(db.Text)  # 举报的原因和描述
+    type = db.Column(db.Integer)  # 举报的类型
 
 
 class Favorite(db.Model):

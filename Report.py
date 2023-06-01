@@ -17,6 +17,7 @@ class ini_report(Resource):
             parser = reqparse.RequestParser()
             parser.add_argument('order_id', type=int, required=True, location=['form'])
             parser.add_argument('content', type=str, required=True, location=['form'])
+            parser.add_argument('type', type=int, required=True, location=['form'])
             token = request.headers.get("Authorization")
             args = parser.parse_args()
             if get_expiration(token):
@@ -26,8 +27,8 @@ class ini_report(Resource):
                     return make_response(jsonify(code=401, message="用户是黑名单或处于冻结状态"), 401)
                 else:
                     order = db.session.query(Order).filter(Order.id == args['order_id']).first()
-                    report = Report(id=id_generate(1, 4), reported_id=order.seller_id, report_order=args['order_id'],
-                                    reporter_id=uid, status=0, content=args['content'])
+                    report = Report(id=id_generate(), reported_id=order.seller_id, report_order=args['order_id'],
+                                    reporter_id=uid, status=0, content=args['content'], type=args['type'])
                     db.session.add(report)
                     db.session.commit()
                     return make_response(jsonify(code=200, message="举报成功"), 200)
@@ -46,8 +47,9 @@ class my_report(Resource):
                 reports = db.session.query(Report).filter(Report.reporter_id == uid).all()
                 report_list = []
                 for report in reports:
-                    report_dict = {"id": report.id, "reported_id": report.reported_id, "report_order": report.report_order,
-                                   "reporter_id": report.reporter_id, "status":report.status}
+                    report_dict = {"id": report.id, "reported_id": report.reported_id,
+                                   "report_order": report.report_order,
+                                   "reporter_id": report.reporter_id, "status": report.status, "type": type}
                     report_list.append(report_dict)
                 return make_response(jsonify(code=201, message="查询成功", data=report_list), 201)
             else:
@@ -71,7 +73,8 @@ class status_report(Resource):
                     for report in reports:
                         report_dict = {"id": report.id, "reported_id": report.reported_id,
                                        "report_order": report.report_order,
-                                       "reporter_id": report.reporter_id, "status": report.status}
+                                       "reporter_id": report.reporter_id, "status": report.status, "type": report.type
+                                       }
                         report_list.append(report_dict)
                     return make_response(jsonify(code=201, message="查询成功", data=report_list), 201)
                 else:
