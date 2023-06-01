@@ -1,9 +1,9 @@
 import logging
 from flask import request, jsonify, Blueprint, make_response
 from mysql import User, Good, db, Order, app
-from Token import get_expiration, get_id
+from utils.Token import get_expiration, get_id
 from flask_restful import reqparse, Api, Resource
-from snowflake import id_generate
+from utils.snowflake import id_generate
 
 orders = Blueprint('order', __name__)
 api = Api(orders)
@@ -39,7 +39,7 @@ class Order_ini(Resource):
                             if status == 2:
                                 return jsonify(code=403, message='出价失败', data='用户处于被冻结状态，无法出价')
                             else:
-                                order = Order(id=id_generate(1, 4), status=0, buyer_id=uid, seller_id=good.seller_id,
+                                order = Order(id=id_generate(1, 3), status=0, buyer_id=uid, seller_id=good.seller_id,
                                               buyer_status=0, seller_status=0, good_id=good.id, price=args['price'])
                                 db.session.add(order)
                                 db.session.commit()
@@ -51,7 +51,8 @@ class Order_ini(Resource):
 
 # 卖家接受订单,id是订单id
 class agree_order(Resource):
-    def put(self, id):
+    @staticmethod
+    def put(id):
         parser = reqparse.RequestParser()
         parser.add_argument('status', type=int, required=True, location=['form'])
         args = parser.parse_args()

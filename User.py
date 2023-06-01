@@ -1,7 +1,7 @@
 import logging
 from flask import request, jsonify, Blueprint, make_response
-from mysql import User, Good, db, Order, app, Freeze
-from Token import get_expiration, get_id
+from mysql import User, db, Order, app, Freeze
+from utils.Token import get_expiration, get_id
 from flask_restful import reqparse, Api, Resource
 
 

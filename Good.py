@@ -1,7 +1,7 @@
 from flask import request, jsonify
-from mysql import User, Good, Report, Order,db
+from mysql import Good, db
 from flask import Flask
-from Token import get_expiration, get_id, get_status
+from utils.Token import get_expiration
 
 app = Flask(__name__)
 

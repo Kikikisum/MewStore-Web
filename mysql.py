@@ -46,6 +46,7 @@ class Order(db.Model):
     buyer_status = db.Column(db.Integer)  # 买方付款为1，未付款为0
     seller_status = db.Column(db.Integer)  # 卖方确认订单为1，未确认为0,拒绝为-1
     price = db.Column(db.Numeric(10, 2))  # 价格
+    generate_time = db.Column(db.TIMESTAMP)  # 时间
 
 
 class Report(db.Model):
@@ -64,14 +65,18 @@ class Favorite(db.Model):
     good_id = db.Column(db.BigInteger, primary_key=True)
 
 
-class Freeze(db.Model):
-    __tablename__ = "freeze"
-    user_id = db.Column(db.BigInteger, primary_key=True)
-    order_id = db.Column(db.BigInteger, primary_key=True)
-    reason = db.Column(db.Text)
-    status = db.Column(db.Integer)
+class Message(db.Model):
+    __tablename__ = "messages"
+    id = db.Column(db.BigInteger, primary_key=True)
+    isSystem = db.Column(db.Boolean)  # 是否为系统消息
+    send_id = db.Column(db.BigInteger)  # 发送者id
+    receive_id = db.Column(db.BigInteger)  # 接收者id
+    message = db.Column(db.Text)  # 信息内容
+    send_time = db.Column(db.TIMESTAMP)  # 发送时间
+    type = db.Column(db.Integer)  # 消息类型，0为文本，1为图片
+    is_read = db.Column(db.Boolean)   # 是否已读
 
 
-with app.app_context():
+# with app.app_context():
     # db.drop_all()  # 初始化表格，需要时再用
-    db.create_all()
+    # db.create_all()

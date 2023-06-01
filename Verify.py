@@ -1,14 +1,13 @@
 import logging
 from flask import request, jsonify, Blueprint, make_response
-from mysql import User, Good, db, Order, app,Report, Freeze
-from Token import get_expiration, get_id
+from mysql import User, Good, db, Order, app, Report
+from utils.Token import get_expiration, get_id
 from flask_restful import reqparse, Api, Resource
-from snowflake import id_generate
-
 
 verify = Blueprint('verify', __name__)
 api = Api(verify)
 logger = logging.getLogger(__name__)
+
 
 # 管理员审核商品
 class verify_good(Resource):
@@ -33,6 +32,7 @@ class verify_good(Resource):
                     return make_response(jsonify(code=403, message="没有权限审核"), 403)
             else:
                 return make_response(jsonify(code=401, message="登录时间过期"), 401)
+
 
 #  管理员审核举报信息
 class verify_report(Resource):

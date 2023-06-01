@@ -1,7 +1,7 @@
 import logging
+from mysql import db, app, User, Favorite, Good
 from flask import request, jsonify, Blueprint, make_response
-from mysql import User, db, app, Favorite,Good
-from Token import get_expiration, get_id
+from utils.Token import get_expiration, get_id
 from flask_restful import Api, Resource
 
 fav = Blueprint('fav', __name__)
@@ -39,7 +39,7 @@ class add_fav(Resource):
 
 
 #  获取自身收藏的商品
-class my_fav(Resource):
+class my_favorite(Resource):
     def get(self):
         with app.app_context():
             token = request.headers.get("Authorization")
@@ -63,4 +63,4 @@ class my_fav(Resource):
 
 
 api.add_resource(add_fav, "/fav/<int:id>")
-api.add_resource(my_fav, "/my/fav")
+api.add_resource(my_favorite, "/my/fav")
