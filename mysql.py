@@ -65,7 +65,7 @@ class Favorite(db.Model):
     good_id = db.Column(db.BigInteger, primary_key=True)
 
 
-class Message(db.Model):
+class Messages(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.BigInteger, primary_key=True)
     isSystem = db.Column(db.Boolean)  # 是否为系统消息

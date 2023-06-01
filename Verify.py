@@ -65,11 +65,12 @@ class verify_report(Resource):
                 return make_response(jsonify(code=401, message="登录时间过期"), 401)
 
 
-#  审核找回账号,id为账号id
+#  审核找回账号,id为举报id
 class verfy_freeze(Resource):
     def put(self,id):
         with app.app_context():
             token = request.headers.get("Authorization")
+            status =
             parser = reqparse.RequestParser()
             parser.add_argument('status', type=int, required=True, location=['form'])
             args = parser.parse_args()
