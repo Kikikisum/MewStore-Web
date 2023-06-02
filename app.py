@@ -5,10 +5,12 @@ from Favorite import fav
 from User import user
 from Verify import verify
 from Report import report
+from flask_socketio import SocketIO
+from chat.chat import Message
+
 import logging
 
 app = Flask(__name__)
-CORS(app)  # 实现跨域
 #  注册蓝图
 app.register_blueprint(orders)
 app.register_blueprint(fav)
@@ -26,4 +28,14 @@ formatter = logging.Formatter("[%(asctime)s]-[%(levelname)s]-[%(filename)s]-[Lin
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-app.run(host='0.0.0.0')  # 内网可用
+# 跨域实现
+cors = CORS()
+cors.init_app(app)
+# socketio注册
+socketio = SocketIO()
+socketio.init_app(app, cors_allowed_origins='*')
+socketio.on_namespace(Message('/system/message'))
+
+if __name__ == '__main__':
+    # app.run(host='0.0.0.0')  # 内网可用
+    socketio.run(app)
