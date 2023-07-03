@@ -1,12 +1,13 @@
 from flask import Flask
 from flask_cors import CORS
-from Order import orders
-from Favorite import fav
-from User import user
-from Verify import verify
-from Report import report
+from api.Order import orders
+from api.Favorite import fav
+from api.User import user
+from api.Verify import verify
+from api.Report import report
 from flask_socketio import SocketIO
 from chat.chat import Message
+from mysql import db
 
 import logging
 
@@ -17,6 +18,9 @@ app.register_blueprint(fav)
 app.register_blueprint(user)
 app.register_blueprint(verify)
 app.register_blueprint(report)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://mew_store:114514@106.14.35.23:3306/test'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
 
 logger = logging.getLogger()
 logger.setLevel(level=logging.DEBUG)  # 设置日志级别为DEBUG
@@ -37,5 +41,6 @@ socketio.init_app(app, cors_allowed_origins='*')
 socketio.on_namespace(Message('/system/message'))
 
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0')  # 内网可用
-    socketio.run(app)
+    app.run(host='0.0.0.0')  # 内网可用
+    socketio.run(app, async_mode='threading')
+

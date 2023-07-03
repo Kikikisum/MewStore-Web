@@ -4,6 +4,7 @@ from mysql import User, Good, db, Order, app,Messages
 from utils.Token import get_expiration, get_id
 from flask_restful import reqparse, Api, Resource
 from utils.snowflake import id_generate
+import datetime
 from chat.chat import Message
 
 orders = Blueprint('order', __name__)
@@ -40,17 +41,20 @@ class Order_ini(Resource):
                             if status == 2:
                                 return jsonify(code=403, message='出价失败', data='用户处于被冻结状态，无法出价')
                             else:
-                                order = Order(id=id_generate(1, 3), status=0, buyer_id=uid, seller_id=good.seller_id,
+                                order = Order(id=id_generate('order'), status=0, buyer_id=uid, seller_id=good.seller_id,
+                                              generate_time=datetime.datetime.utcnow(),
                                               buyer_status=0, seller_status=0, good_id=good.id, price=args['price'])
                                 db.session.add(order)
                                 db.session.commit()
                                 logger.debug("创建订单成功")
-                                order_dict = {"msg": "商品有新的订单", "id": order.id, "status": order.status, "buyer_id":
-                                    order.buyer_id, "seller_id": order.seller_id, "good_id": order.good_id,
-                                              "buyer_status": order.buyer_status,
-                                              "seller_status": order.seller_status, "price": order.price}
-                                Message.on_message(Message, order.seller_id, jsonify(message=order_dict))
-                                logger.debug("向卖家发送新的订单信息")
+                                # order_dict = {"msg": "商品有新的订单", "id": order.id, "status": order.status,
+                                #                "buyer_id": order.buyer_id, "seller_id": order.seller_id,
+                                #              "good_id": order.good_id,
+                                #              "buyer_status": order.buyer_status,
+                                #              "generate_time": datetime.datetime.utcnow(),
+                                #              "seller_status": order.seller_status, "price": order.price}
+                                # Message.on_message(Message, order.seller_id, jsonify(message=order_dict))
+                                # logger.debug("向卖家发送新的订单信息")
                                 return make_response(jsonify(code=201, message='出价成功'), 201)
         else:
             return make_response(jsonify(code=401, message="登录过期"), 401)

@@ -38,8 +38,7 @@ class Message(Namespace):  # 聊天功能
 
     def send_offline_messages(self, receive_id):
         # 查询数据库中针对接收者的未读消息
-        offline_messages = Messages.query.filter_by(receive_id=receive_id, send_id=6, is_read=0).filter(
-            Messages.send_id != 6).all()
+        offline_messages = Messages.query.filter_by(receive_id=receive_id, send_id=6, is_read=0).all()
 
         # 将未读消息发送给接收者
         for message in offline_messages:

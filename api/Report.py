@@ -88,6 +88,7 @@ class status_report(Resource):
             else:
                 return make_response(jsonify(code=401, message="登录过期"), 401)
 
+
 # 卖家对取消交易的处理，由管理员员执行
 # 卖家对取消交易的回应，管理员进行处理,damage为-1时拒绝取消交易，damage为0时账户无受损，1为轻微受损，2为严重受损
 class cancel_Order():
@@ -105,7 +106,7 @@ class cancel_Order():
                 order = db.session.query(Order).filter(Order.id == report.report_order).first()
                 buyer = db.session.query(User).filter(User.id == report.reporter_id).first()
                 seller = db.session.query(User).filter(User.id == report.reported_id).first()
-                if user.status==3:
+                if user.status == 3:
                     report_dict = {"msg": "您的取消交易操作被卖家拒绝!","id": report.id, "reported_id": report.reported_id,
                                    "report_order": report.report_order,
                                    "reporter_id": report.reporter_id, "status": report.status, "type": report.type
@@ -120,7 +121,7 @@ class cancel_Order():
                         if args['damage']==0: # 全额返还
                             money = seller.money-order.price
                             last = buyer.money+order.price
-                            if money<0:
+                            if money < 0:
                                 report_dict.update("msg", "您的账户余额不足，您被设置为黑户")
                                 Message.on_message(Message, report.reported_id, jsonify(report_dict))
                                 db.session.query(User).filter(User.id == report.reported_id).update({'money': 0})
@@ -156,4 +157,4 @@ class cancel_Order():
 api.add_resource(ini_report, '/report/ini')
 api.add_resource(my_report, '/my/report')
 api.add_resource(status_report, '/report/status')
-api.add_resource(cancel_Order, '/cancel/id')
+api.add_resource(cancel_Order, '/cancel/order')
