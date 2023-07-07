@@ -2,7 +2,6 @@ from flask import Flask
 from flask_cors import CORS
 from api.Order import orders
 from api.Favorite import fav
-from api.User import user
 from api.Verify import verify
 from api.Report import report
 from flask_socketio import SocketIO
@@ -15,7 +14,6 @@ app = Flask(__name__)
 #  注册蓝图
 app.register_blueprint(orders)
 app.register_blueprint(fav)
-app.register_blueprint(user)
 app.register_blueprint(verify)
 app.register_blueprint(report)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://mew_store:114514@106.14.35.23:3306/test'

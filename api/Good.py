@@ -35,7 +35,7 @@ def view_status():
         token = request.headers.get("Authorization")
         status = request.form.get("status")
         if get_expiration(token):
-            good = db.session.query(Good).filter(Good.status == good_status).all()
+            good = db.session.query(Good).filter(Good.status == status).all()
             if not good:
                 return jsonify(code=401, message="没有该状态的商品")
             else:

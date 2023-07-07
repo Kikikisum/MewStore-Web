@@ -28,7 +28,7 @@ class ini_report(Resource):
                     return make_response(jsonify(code=401, message="用户是黑名单或处于冻结状态"), 401)
                 else:
                     order = db.session.query(Order).filter(Order.id == args['order_id']).first()
-                    report = Report(id=id_generate(), reported_id=order.seller_id, report_order=args['order_id'],
+                    report = Report(id=id_generate('report'), reported_id=order.seller_id, report_order=args['order_id'],
                                     reporter_id=uid, status=0, content=args['content'], type=args['type'])
                     db.session.add(report)
                     db.session.commit()
@@ -36,7 +36,7 @@ class ini_report(Resource):
                         report_dict = {"msg": "您的订单被买家申请取消交易!", "id": report.id, "reported_id": report.reported_id,
                                        "report_order": report.report_order,
                                        "reporter_id": report.reporter_id, "status": report.status, "type": type}
-                        Message.on_message(Message, report.reported_id, jsonify(report_dict))
+                        # Message.on_message(Message, report.reported_id, jsonify(report_dict))
                     return make_response(jsonify(code=200, message="举报成功"), 200)
             else:
                 return make_response(jsonify(code=401, message="登录过期"), 401)
@@ -52,12 +52,15 @@ class my_report(Resource):
                 user = db.session.query(User).filter(User.id == uid).first()
                 reports = db.session.query(Report).filter(Report.reporter_id == uid).all()
                 report_list = []
-                for report in reports:
-                    report_dict = {"id": report.id, "reported_id": report.reported_id,
-                                   "report_order": report.report_order,
-                                   "reporter_id": report.reporter_id, "status": report.status, "type": type}
-                    report_list.append(report_dict)
-                return make_response(jsonify(code=201, message="查询成功", data=report_list), 201)
+                if user.status == 0 or user.status == 3:
+                    for report in reports:
+                        report_dict = {"id": report.id, "reported_id": report.reported_id,
+                                       "report_order": report.report_order,
+                                       "reporter_id": report.reporter_id, "status": report.status, "type": report.type}
+                        report_list.append(report_dict)
+                    return make_response(jsonify(code=201, message="查询成功", data=report_list), 201)
+                else:
+                    return make_response(jsonify(code=402, message="黑户或冻结用户无法查询"))
             else:
                 return make_response(jsonify(code=401, message="登录过期"), 401)
 
@@ -91,7 +94,7 @@ class status_report(Resource):
 
 # 卖家对取消交易的处理，由管理员员执行
 # 卖家对取消交易的回应，管理员进行处理,damage为-1时拒绝取消交易，damage为0时账户无受损，1为轻微受损，2为严重受损
-class cancel_Order():
+class cancel_Order(Resource):
     def post(self, id):
         with app.app_context():
             token = request.headers.get("Authorization")
@@ -111,30 +114,30 @@ class cancel_Order():
                                    "report_order": report.report_order,
                                    "reporter_id": report.reporter_id, "status": report.status, "type": report.type
                                    }
-                    if args['damage']==-1:
-                        db.session.query(Report).filter(Report.id == args['id']).upadate({"status":-1})
+                    if args['damage'] == -1:
+                        db.session.query(Report).filter(Report.id == args['id']).upadate({"status": -1})
                         db.session.commit()
-                        Message.on_message(Message, report.reporter_id, jsonify(report_dict))
+                        # Message.on_message(Message, report.reporter_id, jsonify(report_dict))
                     else:
                         db.session.query(Report).filter(Report.id == args['id']).upadate({"status": 1})
                         db.session.commit()
-                        if args['damage']==0: # 全额返还
+                        if args['damage'] == 0:  # 全额返还
                             money = seller.money-order.price
                             last = buyer.money+order.price
                             if money < 0:
                                 report_dict.update("msg", "您的账户余额不足，您被设置为黑户")
-                                Message.on_message(Message, report.reported_id, jsonify(report_dict))
+                                #Message.on_message(Message, report.reported_id, jsonify(report_dict))
                                 db.session.query(User).filter(User.id == report.reported_id).update({'money': 0})
                             else:
                                 db.session.query(User).filter(User.id == report.reported_id).update({'money': money})
                             db.session.query(User).filter(User.id == report.reporter_id).update({'money': last})
                             db.session.commit()
                             report_dict.update("msg", "您的交易金已全部退回您的钱包!")
-                            Message.on_message(Message, report.reporter_id, jsonify(report_dict))
+                            # Message.on_message(Message, report.reporter_id, jsonify(report_dict))
                         if args['damage'] == 1:
                             money = seller.money - order.price*0.7
                             last = buyer.money + order.price*0.7
-                            if money < 0:
+                            if money<0:
                                 report_dict.update("msg", "您的账户余额不足，您被设置为黑户")
                                 Message.on_message(Message, report.reported_id, jsonify(report_dict))
                                 db.session.query(User).filter(User.id == report.reported_id).update({'money': 0})
@@ -143,13 +146,39 @@ class cancel_Order():
                             db.session.query(User).filter(User.id == report.reporter_id).update({'money': last})
                             db.session.commit()
                             report_dict.update("msg", "您的交易金的70%退回您的钱包!")
-                            Message.on_message(Message, report.reporter_id, jsonify(report_dict))
+                            # Message.on_message(Message, report.reporter_id, jsonify(report_dict))
                         if args['damage'] == 2:
                             report_dict.update("msg", "您的交易金不予以返还!")
-                            Message.on_message(Message, report.reporter_id, jsonify(report_dict))
+                            # Message.on_message(Message, report.reporter_id, jsonify(report_dict))
                         return make_response(jsonify(code=201, message="审核成功!"), 201)
                 else:
                     return make_response(jsonify(code=401, message="没有权限审核"), 401)
+            else:
+                return make_response(jsonify(code=401, message="登录过期"), 401)
+
+
+class type_report(Resource):
+    def get(self):
+        with app.app_context():
+            parser = reqparse.RequestParser()
+            parser.add_argument('type', type=int, required=True, location=['form'])
+            args = parser.parse_args()
+            token = request.headers.get("Authorization")
+            if get_expiration(token):
+                uid = get_id(token)  # 用户的id
+                user = db.session.query(User).filter(User.id == uid).first()
+                if user.status == 3:
+                    reports = db.session.query(Report).filter(Report.type == args['type']).all()
+                    report_list = []
+                    for report in reports:
+                        report_dict = {"id": report.id, "reported_id": report.reported_id,
+                                       "report_order": report.report_order,
+                                       "reporter_id": report.reporter_id, "status": report.status, "type": report.type
+                                       }
+                        report_list.append(report_dict)
+                    return make_response(jsonify(code=201, message="查询成功", data=report_list), 201)
+                else:
+                    return make_response(jsonify(code=401, message="没有权限查询"), 201)
             else:
                 return make_response(jsonify(code=401, message="登录过期"), 401)
 
@@ -158,3 +187,4 @@ api.add_resource(ini_report, '/report/ini')
 api.add_resource(my_report, '/my/report')
 api.add_resource(status_report, '/report/status')
 api.add_resource(cancel_Order, '/cancel/order')
+api.add_resource(type_report, '/report/type')
