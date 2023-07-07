@@ -33,7 +33,7 @@ class verify_good(Resource):
                         'id': good.id, 'view': good.view, 'content': good.content, 'game': good.game,
                         'title': good.title, 'status': good.status, 'sell_id': good.sell_id
                     }
-                    Message.on_message(Message, good.seller_id, jsonify(message=dic_good))
+                    # Message.on_message(Message, good.seller_id, jsonify(message=dic_good))
                     logger.debug("商品审核系统消息发放")
                     return make_response(jsonify(code=201, message='审核成功'), 201)
                 else:
@@ -73,9 +73,9 @@ class verify_report(Resource):
                             "reporter_id": report.reporter_id, "status": report.status, "type": report.type
                         }
                         logger.debug("给被举报者发送被举报成功的系统消息")
-                        Message.on_message(self, report.reported_id, jsonify(message=dic_report))
+                        # Message.on_message(self, report.reported_id, jsonify(message=dic_report))
                         dic_report.update("msg", "您的举报成功!")
-                        Message.on_message(self, report.reporter_id, jsonify(message=dic_report))
+                        # Message.on_message(self, report.reporter_id, jsonify(message=dic_report))
                         logger.debug("给举报者发送举报成功的系统消息")
                     else:
                         dic_report = {
@@ -84,7 +84,7 @@ class verify_report(Resource):
                             "report_order": report.report_order,
                             "reporter_id": report.reporter_id, "status": report.status, "type": report.type
                         }
-                        Message.on_message(self, report.reporter_id, jsonify(message=dic_report))
+                        # Message.on_message(self, report.reporter_id, jsonify(message=dic_report))
                         logger.debug("给举报者发送举报失败的系统消息")
                     return make_response(jsonify(code=201, message='审核成功'), 201)
                 else:
@@ -118,7 +118,7 @@ class verfy_freeze(Resource):
                         "report_order": report.report_order,
                         "reporter_id": report.reporter_id, "status": report.status, "type": report.type
                     }
-                    Message.on_message(self, report.reporter_id, jsonify(dic_report))
+                    # Message.on_message(self, report.reporter_id, jsonify(dic_report))
                     # 先对举报的审核状态进行更新
                     if parser['status'] == 1:
                         last = seller.money-order.price
@@ -130,15 +130,15 @@ class verfy_freeze(Resource):
                                 "report_order": report.report_order,
                                 "reporter_id": report.reported_id, "status": report.status, "type": report.type
                             }
-                            Message.on_message(self, report.reported_id, jsonify(dic_report))
+                            # Message.on_message(self, report.reported_id, jsonify(dic_report))
                             db.session.query(User).filter(User.id == report.reported_id).update({'money': last})
                             db.session.query(User).filter(User.id == report.reported_id).update({'money': money})
                             db.session.commit()
                             dic_report.update("msg", "退款成功")
-                            Message.on_message(self, report.reporter_id, jsonify(dic_report))
+                            # Message.on_message(self, report.reporter_id, jsonify(dic_report))
                         else:
                             dic_report.update("msg", "对您尝试找回账户的举报通过，但您的余额不足，您将会被拉入黑名单")
-                            Message.on_message(self, report.reported_id, jsonify(dic_report))
+                            # Message.on_message(self, report.reported_id, jsonify(dic_report))
                         return make_response(jsonify(code=201, message="通过账户找回举报成功!"))
                     else:
                         dic_report = {
@@ -147,7 +147,7 @@ class verfy_freeze(Resource):
                             "report_order": report.report_order,
                             "reporter_id": report.reporter_id, "status": report.status, "type": report.type
                         }
-                        Message.on_message(self, report.reporter_id, jsonify(dic_report))
+                        # Message.on_message(self, report.reporter_id, jsonify(dic_report))
                         # 找回账户不通过，给举报者发送信息
                         return make_response(jsonify(code=201, message="拒绝举报成功!"), 201)
 

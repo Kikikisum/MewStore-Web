@@ -34,6 +34,7 @@ class Good(db.Model):
     status = db.Column(db.Integer)  # 商品状态未审核为0，审核通过为1，审核不通过为-1,被下架为2，已售出为3
     seller_id = db.Column(db.BigInteger)  # 卖家id
     price = db.Column(db.Numeric(10, 2))  # 价格
+    add_time = db.Column(db.TIMESTAMP)
 
 
 class Order(db.Model):
