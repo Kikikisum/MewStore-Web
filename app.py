@@ -1,11 +1,11 @@
 from flask import Flask
 from flask_cors import CORS
-from api.Order import orders
-from api.Favorite import fav
-from api.Verify import verify
-from api.Report import report
+from api.orders.__init__ import orders
+from api.fav.__init__ import fav
+from api.vertify.Verify import verify
+from api.report.__init__ import report
 from flask_socketio import SocketIO
-from chat.chat import Message
+from api.chat.chat import Message
 from mysql import db
 
 import logging
